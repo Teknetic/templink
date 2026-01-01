@@ -6,6 +6,8 @@ import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import * as linkService from './linkService.js';
+import * as authService from './authService.js';
+import { requireAuth, optionalAuth } from './authMiddleware.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -38,6 +40,57 @@ const getClientIp = (req) => {
 };
 
 // API Routes
+
+// Authentication Routes
+
+// Register new user
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const result = await authService.registerUser({ email, password, name });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Login user
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const result = await authService.loginUser({ email, password });
+    res.json(result);
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+});
+
+// Get current user profile
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  try {
+    const user = authService.getUserById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const stats = authService.getUserStats(req.user.userId);
+    res.json({ ...user, stats });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Link Management Routes
 
 // Create short link
 app.post('/api/links', async (req, res) => {
