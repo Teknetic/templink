@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { nanoid } from 'nanoid';
 import db from './database.js';
+import { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail } from './emailService.js';
 
 const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
@@ -16,6 +18,7 @@ const initUsersTable = () => {
         password_hash TEXT NOT NULL,
         name TEXT,
         plan TEXT DEFAULT 'free',
+        email_verified INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL,
         last_login INTEGER,
         is_active INTEGER DEFAULT 1
@@ -26,9 +29,27 @@ const initUsersTable = () => {
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
     `).run();
 
-    console.log('✅ Users table initialized');
+    // Create tokens table for verification and password reset
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS tokens (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        type TEXT NOT NULL,
+        expires_at INTEGER NOT NULL,
+        used INTEGER DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `).run();
+
+    db.prepare(`
+      CREATE INDEX IF NOT EXISTS idx_tokens_token ON tokens(token);
+      CREATE INDEX IF NOT EXISTS idx_tokens_user_id ON tokens(user_id)
+    `).run();
+
+    console.log('✅ Users and tokens tables initialized');
   } catch (error) {
-    console.error('Error initializing users table:', error);
+    console.error('Error initializing tables:', error);
   }
 };
 

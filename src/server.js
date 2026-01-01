@@ -90,6 +90,102 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
   }
 });
 
+// Request password reset
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    await authService.requestPasswordReset(email);
+    res.json({ success: true, message: 'If that email exists, a reset link has been sent' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Reset password with token
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token and password are required' });
+    }
+
+    const result = await authService.resetPassword(token, password);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Verify email
+app.get('/api/auth/verify-email', (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+
+    const result = authService.verifyEmail(token);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Request email verification (resend)
+app.post('/api/auth/resend-verification', requireAuth, async (req, res) => {
+  try {
+    const result = await authService.requestEmailVerification(req.user.userId);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Change password (when logged in)
+app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new passwords are required' });
+    }
+
+    const result = await authService.changePassword(req.user.userId, currentPassword, newPassword);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Update profile
+app.put('/api/auth/profile', requireAuth, (req, res) => {
+  try {
+    const { name, email } = req.body;
+    const result = authService.updateUserProfile(req.user.userId, { name, email });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Delete account
+app.delete('/api/auth/account', requireAuth, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
+    const result = await authService.deleteAccount(req.user.userId, password);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // Link Management Routes
 
 // Create short link
