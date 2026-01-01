@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(timeout /t 3)",
+      "Bash(curl:*)",
+      "Bash(npm start)",
+      "Bash(ping:*)",
+      "Bash(node test-api.js:*)",
+      "Bash(cmd //c \"for /F \"\"tokens=5\"\" %P in \\(''netstat -ano ^| findstr :3000''\\) do taskkill //PID %P //F\")",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell \"Get-Process -Id \\(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue\\).OwningProcess -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(node test-complete.js:*)",
+      "Bash(taskkill /PID 20864 /F)",
+      "Bash(cmd //c taskkill //PID 20864 //F)"
+    ]
+  }
+}
